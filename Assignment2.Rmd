@@ -1,0 +1,368 @@
+---
+title: "Assignment 2: Optimization"
+# subtitle: "possible subtitle goes here"
+author:
+  - Mike Noyes^[<michael.noyes@uconn.edu>; Master's student at
+    Department of Mathematics, University of Connecticut.]
+date: "`r format(Sys.time(), '%d %B %Y')`"
+documentclass: article
+papersize: letter
+fontsize: 11pt
+bibliography: template.bib
+biblio-style: datalab
+keywords: R Markdown, Optimization
+# keywords set in YAML header here only go to the properties of the PDF output
+# the keywords that appear in PDF output are set in latex/before_body.tex
+output:
+  bookdown::pdf_document2
+  bookdown::html_document2
+abstract: |
+    The basis of this assignment is to understand optimization. There are three problems, each with multiple parts. Using what we have learned in class and information from the textbook, I have done my best to solve these problems.
+---
+
+
+```{r setup, echo = FALSE, message = FALSE, warning = FALSE}
+## some utility functions, see the source code for details
+source("utils_template.R")
+
+## specify the packages needed
+pkgs <- c("splines2", "DT", "webshot", "leaflet")
+need.packages(pkgs)
+
+## external data can be read in by regular functions,
+## such as read.table or load
+
+## get output format in case something needs extra effort
+outFormat <- knitr::opts_knit$get("rmarkdown.pandoc.to")
+## "latex" or "html"
+
+## for latex and html output
+isHtml <- identical(outFormat, "html")
+isLatex <- identical(outFormat, "latex")
+latex <- ifelse(isLatex, '\\LaTeX\\', 'LaTeX')
+
+## specify global chunk options
+knitr::opts_chunk$set(fig.width = 5, fig.height = 4, dpi = 300,
+                      out.width = "90%", fig.align = "center")
+
+```
+
+
+#  {#sec:intro}
+
+PART A:
+
+The Cauchy $(\theta,1)$ distribution has probability density:
+$$p(x;\theta)=\cfrac{1}{\pi[1+(x-\theta)^2]}$$
+We know that $x_{1},...,x_{n}$ are iid and that $(x-\theta)^2$ is the same thing as $(\theta-x)^2$. So the log likelihood function of $\theta$ based on the sample is as follows:
+$$l(\theta)=\ln(\prod_{i=1}^n p(x_{i};\theta))=\ln(\prod_{i=1}^n \frac{1}{\pi[1+(x_{i}-\theta)^2]})=\sum_{i=1}^n \ln(\frac{1}{\pi[1+(x_{i}-\theta)^2]})=-n\ln\pi-\sum_{i=1}^n \ln[1+(\theta-x_{i})^2]$$
+$$l^{'}(\theta)=\sum_{i=1}^n [ln(1+(\theta-x_{i})^2)]=-\sum_{i=1}^n \frac{2(\theta-x_{i})}{1+(\theta-x_{i})^2}=-2\sum_{i=1}^n \frac{(\theta-x_{i})}{1+(\theta-x_{i})^2}$$
+$$l^{''}(\theta)=-2\sum_{i=1}^n \frac{(1)(1+(\theta-x_{i})^2)-2(\theta-x_{i})^2}{1+(\theta-x_{i})^2}=-2\sum_{i=1}^n \frac{1-(\theta-x_{i})^2}{[1+(\theta-x_{i})^2]^2}$$
+$$I(\theta)=n\int\frac{[p^{'}(x)]^2}{p(x)}=\frac{4n}{\pi} \int_{-\infty}^{\infty}\frac{x^2dx}{(1+x^2)^3}$$
+If we set x equal to $\tan(y)$, and realize that the its derivative is $\sec^2(y)$, we get
+$$I(\theta)=\frac{4n}{\pi} \int_{-\frac{\pi}{2}}^{\frac{\pi}{2}}\frac{\tan^2(y)d(\tan(y))}{(1+tan^2(y))^3}=\frac{4n}{\pi}\int_{-\frac{\pi}{2}}^{\frac{\pi}{2}}\frac{\tan^2(y)}{(\frac{1}{\sec^2(y)})^3}(\frac{1}{\sec^2(y)})dt$$
+Note that $tan^2(y)=sin^2(y)/cos^2(y)$ and $1/sec^2(y)=cos^2(y)$, so
+$$I(\theta)=\frac{4n}{\pi}\int_{-\frac{\pi}{2}}^{\frac{\pi}{2}}\frac{\sin^2(y)}{\cos^2(y)}\cos^4(y)dt=\frac{4n}{\pi}\int_{-\frac{\pi}{2}}^{\frac{\pi}{2}}\sin^2(y)\cos^2(y)dt=\frac{4n}{\pi}*\frac{\pi}{8}=\frac{n}{2}$$
+
+PART B:
+
+x <- c(1.77, -0.23, 2.76, 3.80, 3.47, 56.75, -1.34, 4.24, -2.44 ,3.29, 3.71, -2.40, 4.53, -0.07, -1.05, -13.87, -2.53, -1.75)
+
+mean(x) = 3.257778
+```{r}
+logp <- function(theta, x) {
+  -log(pi)-log(1+(theta-x)^2)
+}
+likelihood <- function(theta) {
+  logp(theta,1.77) + logp(theta,-0.23) + logp(theta,2.76) + logp(theta,3.80) + logp(theta,3.47) + logp(theta,56.75) + logp(theta,-1.34) + logp(theta,4.24) + logp(theta,-2.44) + logp(theta,3.29) + logp(theta,3.71) + logp(theta,-2.40) + logp(theta,4.53) + logp(theta,-0.07) + logp(theta,-1.05) + logp(theta,-13.87) + logp(theta,-2.53) + logp(theta,-1.75)
+}
+curve(likelihood)
+
+startingpoint_negative11 <- nlminb(-11, likelihood)
+startingpoint_negative11
+startingpoint_negative1 <- nlminb(-1, likelihood)
+startingpoint_negative1
+startingpoint_0 <- nlminb(0, likelihood)
+startingpoint_0
+startingpoint_1.5 <- nlminb(1.5, likelihood)
+startingpoint_1.5
+startingpoint_4 <- nlminb(4, likelihood)
+startingpoint_4
+startingpoint_4.7 <- nlminb(4.7, likelihood)
+startingpoint_4.7
+startingpoint_7 <- nlminb(7, likelihood)
+startingpoint_7
+startingpoint_8 <- nlminb(8, likelihood)
+startingpoint_8
+startingpoint_38 <- nlminb(38, likelihood)
+startingpoint_38
+startingpoint_mean <- nlminb(3.257778,likelihood)
+startingpoint_mean
+```
+
+Comparing the results shows that the sample mean is not a great starting point. Zero is the best starting point.
+
+PART C:
+
+```{r}
+
+fixedpointiterations <- function(fun, x0, tol=.00000001, niter=500){
+  oldxvalue <- x0
+  newxvalue <- fun(oldxvalue)
+  for(i in 1:niter){
+    oldxvalue <- newxvalue
+    newxvalue <- fun(oldxvalue)
+    if(abs((newxvalue - oldxvalue)) < tol)
+      return(newxvalue)
+  }
+  stop
+  return(NULL)
+}
+
+derivativelogp <- function(theta, x) {
+  -(2 * (theta-x) / (1+(theta-x)^2))
+}
+
+Galpha1 <- function(theta) {
+  1 * (derivativelogp(theta, 1.77) + derivativelogp(theta, -.23) + derivativelogp(theta, 2.76) + derivativelogp(theta, 3.80) + derivativelogp(theta, 3.47) + derivativelogp(theta, 56.75) + derivativelogp(theta, -1.34) + derivativelogp(theta, 4.24) + derivativelogp(theta, -2.44) + derivativelogp(theta, 3.29) + derivativelogp(theta, 3.71) + derivativelogp(theta, -2.40) + derivativelogp(theta, 4.53) + derivativelogp(theta, -.07) + derivativelogp(theta, -1.05) + derivativelogp(theta, -13.87) + derivativelogp(theta, -2.53) + derivativelogp(theta, -1.75)) + theta 
+}
+
+fix1_negative11 <- fixedpointiterations(Galpha1, -11)
+fix1_negative11
+fix1_negative1 <- fixedpointiterations(Galpha1, -1)
+fix1_negative1
+fix1_0 <- fixedpointiterations(Galpha1, 0)
+fix1_0
+fix1_1.5 <- fixedpointiterations(Galpha1, 1.5)
+fix1_1.5
+fix1_4 <- fixedpointiterations(Galpha1, 4)
+fix1_4
+fix1_4.7 <- fixedpointiterations(Galpha1, 4.7)
+fix1_4.7
+fix1_7 <- fixedpointiterations(Galpha1, 7)
+fix1_7
+fix1_8 <- fixedpointiterations(Galpha1, 8)
+fix1_8
+fix1_38 <- fixedpointiterations(Galpha1, 38)
+fix1_38
+
+Galpha0.64 <- function(theta) {
+  0.64 * (derivativelogp(theta, 1.77) + derivativelogp(theta, -.23) + derivativelogp(theta, 2.76) + derivativelogp(theta, 3.80) + derivativelogp(theta, 3.47) + derivativelogp(theta, 56.75) + derivativelogp(theta, -1.34) + derivativelogp(theta, 4.24) + derivativelogp(theta, -2.44) + derivativelogp(theta, 3.29) + derivativelogp(theta, 3.71) + derivativelogp(theta, -2.40) + derivativelogp(theta, 4.53) + derivativelogp(theta, -.07) + derivativelogp(theta, -1.05) + derivativelogp(theta, -13.87) + derivativelogp(theta, -2.53) + derivativelogp(theta, -1.75)) + theta 
+}
+
+fix0.64_negative11 <- fixedpointiterations(Galpha0.64, -11)
+fix0.64_negative11
+fix0.64_negative1 <- fixedpointiterations(Galpha0.64, -1)
+fix0.64_negative1
+fix0.64_0 <- fixedpointiterations(Galpha0.64, 0)
+fix0.64_0
+fix0.64_1.5 <- fixedpointiterations(Galpha0.64, 1.5)
+fix0.64_1.5
+fix0.64_4 <- fixedpointiterations(Galpha0.64, 4)
+fix0.64_4
+fix0.64_4.7 <- fixedpointiterations(Galpha0.64, 4.7)
+fix0.64_4.7
+fix0.64_7 <- fixedpointiterations(Galpha0.64, 7)
+fix0.64_7
+fix0.64_8 <- fixedpointiterations(Galpha0.64, 8)
+fix0.64_8
+fix0.64_38 <- fixedpointiterations(Galpha0.64, 38)
+fix0.64_38
+
+Galpha0.25 <- function(theta) {
+  0.25 * (derivativelogp(theta, 1.77) + derivativelogp(theta, -.23) + derivativelogp(theta, 2.76) + derivativelogp(theta, 3.80) + derivativelogp(theta, 3.47) + derivativelogp(theta, 56.75) + derivativelogp(theta, -1.34) + derivativelogp(theta, 4.24) + derivativelogp(theta, -2.44) + derivativelogp(theta, 3.29) + derivativelogp(theta, 3.71) + derivativelogp(theta, -2.40) + derivativelogp(theta, 4.53) + derivativelogp(theta, -.07) + derivativelogp(theta, -1.05) + derivativelogp(theta, -13.87) + derivativelogp(theta, -2.53) + derivativelogp(theta, -1.75)) + theta 
+}
+
+fix0.25_negative11 <- fixedpointiterations(Galpha0.25, -11)
+fix0.25_negative11
+fix0.25_negative1 <- fixedpointiterations(Galpha0.25, -1)
+fix0.25_negative1
+fix0.25_0 <- fixedpointiterations(Galpha0.25, 0)
+fix0.25_0
+fix0.25_1.5 <- fixedpointiterations(Galpha0.25, 1.5)
+fix0.25_1.5
+fix0.25_4 <- fixedpointiterations(Galpha0.25, 4)
+fix0.25_4
+fix0.25_4.7 <- fixedpointiterations(Galpha0.25, 4.7)
+fix0.25_4.7
+fix0.25_7 <- fixedpointiterations(Galpha0.25, 7)
+fix0.25_7
+fix0.25_8 <- fixedpointiterations(Galpha0.25, 8)
+fix0.25_8
+fix0.25_38 <- fixedpointiterations(Galpha0.25, 38)
+fix0.25_38
+
+```
+
+PART D:
+
+```{r}
+
+derivativelogp <- function(theta, x) {
+  -( 2 * (theta - x) / (1 + (theta - x)^2))
+}
+
+loglikelihood <- function(theta) {
+  -(logp(theta, 1.77) + logp(theta, -.23) + logp(theta, 2.76) + logp(theta, 3.80) + logp(theta, 3.47) + logp(theta, 56.75) + logp(theta, -1.34) + logp(theta, 4.24) + logp(theta, -2.44) + logp(theta, 3.29) + logp(theta, 3.71) + logp(theta, -2.40) + logp(theta, 4.53) + logp(theta, -.07) + logp(theta, -1.05) + logp(theta, -13.87) + logp(theta, -2.53) + logp(theta, -1.75))
+}
+
+derivativeloglikelihood <- function(theta) {
+  (derivativelogp(theta, 1.77) + derivativelogp(theta, -0.23) + derivativelogp(theta, 2.76) +
+  derivativelogp(theta, 3.80) + derivativelogp(theta, 3.47) + derivativelogp(theta, 56.75) +
+  derivativelogp(theta, -1.34) + derivativelogp(theta, 4.24) + derivativelogp(theta, -2.44) +
+  derivativelogp(theta, 3.29) + derivativelogp(theta, 3.71) + derivativelogp(theta, -2.40) +
+  derivativelogp(theta, 4.53) + derivativelogp(theta, -0.07) + derivativelogp(theta, -1.05) +
+  derivativelogp(theta, -13.87) + derivativelogp(theta, -2.53) + derivativelogp(theta, -1.75))
+}
+
+A <- function(x) diag(9, nrow = length(x))
+
+startingpoint_negative11 <- nlminb(-11, loglikelihood, derivativeloglikelihood, A)
+startingpoint_negative11
+startingpoint_negative1 <- nlminb(-1, loglikelihood, derivativeloglikelihood, A)
+startingpoint_negative1
+startingpoint_0 <- nlminb(0, loglikelihood, derivativeloglikelihood, A)
+startingpoint_0
+startingpoint_1.5 <- nlminb(1.5, loglikelihood, derivativeloglikelihood, A)
+startingpoint_1.5
+startingpoint_4 <- nlminb(4, loglikelihood, derivativeloglikelihood, A)
+startingpoint_4
+startingpoint_4.7 <- nlminb(4.7, loglikelihood, derivativeloglikelihood, A)
+startingpoint_4.7
+startingpoint_7 <- nlminb(7, loglikelihood, derivativeloglikelihood, A)
+startingpoint_7
+startingpoint_8 <- nlminb(8, loglikelihood, derivativeloglikelihood, A)
+startingpoint_8
+startingpoint_38 <- nlminb(38, loglikelihood, derivativeloglikelihood, A)
+startingpoint_38
+
+```
+
+PART E:
+
+The final method, which can be seen in Part D, seems to be the most accurate method. On the other hand, the method in Part B seems to be the quickest.
+
+# {#sec:questionone}
+
+PART A:
+
+$$p(x;\theta)=\frac{1-\cos(x_i-\theta)}{2\pi}$$
+$$l(\theta)=\prod_{i=1}^n \frac{1-\cos(x_i-\theta)}{2\pi}=\sum_{i=1}^n \ln{(1-\cos(x_i-\theta))}-n\ln{2\pi}$$
+Since the derivative of cos(x) is -sin(x), so the derivative of the likelihood function is as follows:
+$$l^{'}(\theta)=\sum_{i=1}^n \frac{\sin(\theta-x_i)}{1-\cos(\theta-x_i)}$$
+The second derivative is:
+$$l^{''}(\theta)=\sum\limits_{i=1}^n \frac{\cos(\theta-x_i)(1-cos(\theta-x_i))-\sin^2(\theta-x_i)}{(1-\cos(\theta-x_i))^2}=\sum_{i=1}^n \frac{\cos(\theta-x_i)-1}{(1-\cos(\theta-x_i))^2}=sum_{i=1}^n \frac{1}{\cos(theta-x_i)}$$
+
+x <- c(3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52)
+
+mean(x) = 3.236842
+
+```{r}
+
+x <- c(3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52)
+
+theta <- seq(-pi,pi, by=pi/100)
+loglikelihood <- function(x, theta) {
+  sapply(theta, function(theta) sum(log((1-cos(x-theta))/(2*pi))))
+}
+plot(theta,loglikelihood(x,theta),xlab="Theta",ylab="Log Likelihood of Theta",type="l")
+
+```
+
+PART B:
+
+$$E[X|\theta]=\frac{1}{2\pi}\int_{0}^{2\pi}x*({1-\cos(x-\theta)})dx=\pi-\frac{1}{2\pi}\int_{0}^{2\pi}x*\cos(x-\theta)dx$$
+We now need to integrate by parts. This yields the following:
+$$\int_{0}^{2\pi}x*\cos(x-\theta)dx=x*\sin(x-\theta)|_{0}^{2\pi}-\int_{0}^{2\pi}sin(x-\theta)dx=2\pi\sin(2\pi-\theta)=2\pi\sin(-\theta)=2\pi\sin(\theta)$$
+Because $sin(2\pi+x)=sin(x)$ and $\sin(-x)=sin(x)$.
+So, we have:
+$$E[X|\theta]=\pi-\sin(\theta)$$
+Finally, the Method of Moments estimator of $\theta$ is $E[X|\theta]=\overline{X}=\pi-\sin(\theta)\iff\theta_{moment}=\arcsin(\pi-\overline{X})$
+
+```{r}
+thetamethodofmomentsestimator <- asin(pi-3.236842)
+thetamethodofmomentsestimator
+```
+
+PART C:
+
+```{r}
+
+x <- c(3.91, 4.85, 2.28, 4.06, 3.70, 4.04, 5.46, 3.53, 2.28, 1.96, 2.53, 3.88, 2.22, 3.47, 4.82, 2.46, 2.99, 2.54, 0.52)
+
+NRmethod <- function(p,q,x0,b,maximumvalue) {
+  x1 <- x0-p(x0)/q(x0)
+  iteration <- 1
+  while(abs(x1-x0) > b & iteration < maximumvalue) {
+    x0 <- x1
+    x1 <- x0-p(x0)/q(x0)
+    iteration <- iteration+1
+  }
+  return(x1)
+}
+
+derivativeloglikilihood <- function(theta) {
+  return(-sum(sin(-theta)/(1-cos(x-theta))))
+}
+
+secondderivativeloglikelihood <- function(theta) {
+  return(-sum(1/(1-cos(x-theta))))
+}
+
+NRmethod(derivativeloglikelihood, secondderivativeloglikelihood, thetamethodofmomentsestimator, 0.00000001, 500)
+
+```
+
+PART D:
+
+```{r}
+NRmethod(derivativeloglikelihood, secondderivativeloglikelihood, -2.7, 0.00000001, 500)
+NRmethod(derivativeloglikelihood, secondderivativeloglikelihood, 2.7, 0.00000001, 500)
+```
+
+PART E:
+
+# {#sec:math}
+
+PART A:
+
+```{r}
+
+beetles <- data.frame(
+  days    = c(0,  8,  28,  41,  63,  69,   97, 117,  135,  154),
+  beetles = c(2, 47, 192, 256, 768, 896, 1120, 896, 1184, 1024)
+)
+
+growthfunc <- function(t, K, r) {
+  2*K/(2+(K-2)*exp(-r*t))
+}
+
+n <- nls(beetles~growthfunc(days, K, r), data=beetles, start=list(K=1030, r=0.2),trace=T)
+n
+
+```
+
+```{r}
+
+days    = c(0,  8,  28,  41,  63,  69,   97, 117,  135,  154)
+beetles = c(2, 47, 192, 256, 768, 896, 1120, 896, 1184, 1024)
+
+sumofsquareerrors <- function(K, r) {
+  return(sum((beetles - 2*K / (2 + (K - 2) * exp(-r * days)))^2))
+}
+
+n <- matrix(0, 100, 100, byrow=T)
+for(i in 1:100) {
+  for(j in 1:100) {
+    K <- 800 + 5 * j
+    r <- 0.005 * j
+    n[j,i] <- sumofsquareerrors(K, r)
+  }
+}
+K <- seq( 800, 1300, length.out=100)
+r <- seq(   0,  0.5, length.out=100)
+contour(K, r, n)
+
+```
+
+PART C: 
